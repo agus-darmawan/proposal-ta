@@ -1,27 +1,36 @@
 \chapter{PENDAHULUAN}
 
 \section{Latar Belakang}
+\sloppy
+Sektor kelistrikan di Indonesia memiliki peranan yang sangat penting dalam mendukung kehidupan masyarakat. Populasi penduduk yang terus meningkat, bersamaan dengan perkembangan industri yang pesat, menyebabkan kebutuhan akan listrik mengalami lonjakan yang signifikan. Menurut Laporan Statistik PLN tahun 2023, konsumsi listrik di Indonesia mencapai 288.435,78 GWh dengan jumlah pelanggan sebanyak 89.153.278. Angka ini mencerminkan tren peningkatan yang konsisten dibandingkan tahun-tahun sebelumnya. Sebagai perbandingan, pada tahun 2022 konsumsi listrik tercatat sebesar 273.761,48 GWh dengan jumlah pelanggan sebanyak 85.636.198, sedangkan pada tahun 2021 mencapai 257.634,25 GWh dengan 82.543.980 pelanggan \cite{PLN2023}. Data dari Kementerian Energi dan Sumber Daya Mineral (ESDM) juga menunjukkan bahwa konsumsi listrik per kapita pada tahun 2023 mencapai 1.285 kWh, meningkat dari 1.173 kWh pada tahun 2022, dan diproyeksikan akan terus meningkat hingga mencapai 1.408 kWh pada tahun 2024\cite{ESDM2024}. Peningkatan konsumsi listrik yang signifikan ini menegaskan perlunya penguatan infrastruktur distribusi tenaga listrik agar dapat memenuhi permintaan yang terus berkembang. Salah satu elemen infrastruktur yang sangat vital dalam sistem distribusi tenaga listrik adalah gardu listrik. Gardu listrik berfungsi sebagai penghubung antara pembangkit listrik dan konsumen. Gardu ini tidak hanya mendistribusikan tenaga listrik, tetapi juga mengatur dan mengontrol aliran listrik, menjaga kualitas daya, serta melindungi sistem dari gangguan.
 
-% Ubah paragraf-paragraf berikut sesuai dengan latar belakang dari tugas akhir
-Pesatnya perkembangan roket yang merupakan \lipsum[2]
+Salah satu masalah yang sering terjadi pada gardu listrik adalah \emph{overheat} pada komponen kritis di dalamnya. \emph{Overheat} terjadi ketika suhu komponen melebihi batas aman, yang dapat disebabkan oleh berbagai faktor, termasuk beban berlebih, kondisi lingkungan yang ekstrem, dan kurangnya pemeliharaan yang tepat\cite{Bailey2022}. Ketika suhu komponen meningkat, risiko kerusakan menjadi lebih tinggi, yang dapat mengakibatkan penurunan efisiensi operasional dan potensi pemadaman listrik yang tidak diinginkan\cite{Aksenovich2022}. Studi kasus menunjukkan bahwa \emph{overheat} pada transformator dapat menyebabkan kerusakan serius pada isolasi minyak, yang berfungsi untuk mendinginkan dan melindungi komponen internal dari arus listrik. Ketika suhu minyak isolasi meningkat, sifat dielektriknya dapat terdegradasi, yang berpotensi menyebabkan kegagalan isolasi dan kebakaran\cite{Kalathiripi2017}. Selain itu, \emph{overheat} juga dapat memengaruhi komponen lain dalam gardu listrik, seperti isolator dan \emph{disconnector}. Ketika isolator mengalami \emph{overheat}, material isolasi dapat terdegradasi, sehingga kemampuan menahan tegangan menurun dan meningkatkan risiko terjadinya \emph{arcing} atau percikan listrik\cite{Li2017}.
 
-\lipsum[3]
+Untuk mencegah \emph{overheat} pada komponen gardu listrik, sangat penting untuk melakukan pemeliharaan yang tepat dan pemantauan suhu secara berkala. Dalam konteks ini, penerapan solusi otomatisasi berbasis robotika dapat menjadi alternatif yang efektif untuk meningkatkan efisiensi dan efektivitas pemantauan serta pemeliharaan. Salah satu teknologi yang relevan adalah \emph{autonomous mobile robot}, yaitu perangkat yang dirancang untuk melaksanakan berbagai tugas secara otomatis, termasuk tugas yang membutuhkan ketelitian tinggi atau pengawasan di area yang sulit dijangkau manusia. Salah satu jenis robot yang saat ini sedang berkembang pesat adalah robot \emph{quadruped-legged}. Robot jenis ini dilengkapi dengan empat kaki untuk bergerak dengan meniru cara gerak hewan seperti anjing atau kuda. \emph{Quadruped-legged} memiliki keunggulan dibandingkan robot beroda, khususnya dalam hal mobilitas dan kemampuan bermanuver di medan yang tidak rata. Beberapa riset terkait \emph{quadruped-legged robot} untuk pemantauan gardu listrik telah dilakukan, seperti pada proyek \emph{ASUMO (Advanced Substation Monitoring)}. Proyek ini menunjukkan bahwa penggunaan robot berkaki empat dapat menjadi alternatif yang efektif untuk meningkatkan efisiensi operasional dan menjaga kestabilan pasokan listrik \cite{ASUMO2023}. Menilik dari hal tersebut, penggunaan robot \emph{quadruped-legged} dapat menjadi solusi yang efektif. Robot ini dapat dilengkapi dengan \emph{thermal camera} untuk mendeteksi suhu panas pada komponen gardu listrik, sehingga memungkinkan deteksi dini terhadap \emph{overheat} dan pencegahan kerusakan yang lebih serius. Oleh karena itu, penelitian lebih lanjut dan pengembangan teknologi robotika dalam konteks pemantauan infrastruktur kelistrikan sangat diperlukan untuk memastikan sistem kelistrikan Indonesia dapat berfungsi secara optimal dan berkelanjutan di masa depan.
 
-\section{Rumusan Masalah}
-
-% Ubah paragraf berikut sesuai dengan rumusan masalah dari tugas akhir
-Berdasarkan hal yang telah dipaparkan di latar belakang, \lipsum[4]
-
-\section{Batasan Masalah atau Ruang Lingkup}
-
-\lipsum[6]
+\section{Permasalahan}
+Berdasarkan latar belakang yang telah dijelaskan sebelumnya, penelitian ini berfokus pada pengembangan robot otonom untuk pemantauan \emph{overheat} pada komponen gardu listrik. Namun, beberapa permasalahan teknis perlu diselesaikan dalam proses pengembangan ini. Pertama, diperlukan sistem \emph{computer vision} berbasis kamera termal yang mampu mendeteksi dan menganalisis suhu komponen gardu listrik secara akurat untuk mengidentifikasi potensi \emph{overheat}. Kedua, navigasi otonom menjadi tantangan besar karena robot harus mampu bergerak secara mandiri di lingkungan gardu listrik yang dinamis, kompleks, dan terkadang memiliki medan tidak rata. Robot harus dilengkapi dengan sistem navigasi yang dapat menghindari rintangan dan memastikan patroli berjalan dengan aman dan efisien. Ketiga, untuk mendukung proses pemantauan secara \emph{real-time}, dibutuhkan \emph{control station} yang dapat memantau pergerakan robot, mengontrol fungsi robot secara jarak jauh, serta memberikan informasi visual dan estimasi posisi komponen yang mengalami \emph{overheat}.
 
 \section{Tujuan}
+Penelitian ini bertujuan untuk mengembangkan sistem pemantauan \emph{overheat} pada komponen gardu listrik menggunakan robot otonom yang dilengkapi dengan kamera termal dan sistem pendukung lainnya. Secara terperinci, tujuan penelitian ini meliputi:
+\begin{enumerate}
+    \item Mengembangkan sistem \emph{computer vision} pada robot yang mampu mendeteksi dan mengidentifikasi komponen gardu listrik yang mengalami \emph{overheat} secara akurat.
+    \item Merancang dan mengimplementasikan sistem navigasi otonom untuk memungkinkan robot bergerak secara mandiri di lingkungan gardu listrik, menghindari rintangan, serta menjalankan tugas patroli secara efisien.
+    \item Merancang \emph{control station} untuk memantau pergerakan robot, mengontrol operasi robot secara \emph{real-time}, dan menampilkan hasil analisis suhu serta estimasi posisi komponen yang mengalami \emph{overheat}.
+\end{enumerate}
 
-% Ubah paragraf berikut sesuai dengan tujuan penelitian dari tugas akhir
-Tujuan dari penelitian ini adalah \lipsum[7][1-14]
+\section{Batasan Masalah}
+Penelitian ini memiliki batasan yang disebabkan oleh keterbatasan sumber daya, waktu, dan faktor lainnya. Batasan-batasan tersebut dijelaskan sebagai berikut:
+\begin{enumerate}
+    \item Robot yang digunakan dalam penelitian ini adalah \emph{DeepRobotics Jueying Lite 3}, yang dilengkapi dengan kamera termal untuk mendeteksi suhu pada komponen gardu listrik.
+    \item Algoritma \emph{kinematic} yang digunakan untuk pergerakan robot memanfaatkan program bawaan tanpa melakukan pengembangan atau modifikasi algoritma baru.
+    \item Lingkungan gardu listrik yang menjadi target penelitian adalah gardu induk atau gardu pembangkit jenis \emph{outdoor}, yang berada dalam jangkauan sinyal \emph{BTS provider} untuk mendukung transmisi data kontrol.
+\end{enumerate}
+\section{Manfaat Penelitian}
+Penelitian ini diharapkan memberikan manfaat baik secara praktis maupun teoritis yang mendukung pengembangan teknologi robotika dan pemantauan infrastruktur kelistrikan, khususnya pada komponen di gardu listrik.
 
-\section{Manfaat}
+\subsection{Manfaat Praktis}
+Hasil penelitian ini diharapkan dapat memberikan solusi otomatis yang aplikatif dalam industri kelistrikan, khususnya dalam sistem pemantauan suhu berlebih (\emph{overheat}) pada komponen gardu listrik. 
 
-% Ubah paragraf berikut sesuai dengan tujuan penelitian dari tugas akhir
-Manfaat dari penelitian ini adalah \lipsum[8][1-14]
+\subsection{Manfaat Teoritis}
+Secara teoritis, penelitian ini berkontribusi pada pengembangan ilmu pengetahuan di bidang robotika, terutama dalam navigasi otonom dan sistem deteksi berbasis computer vision. Selain itu, penelitian ini memperkaya literatur tentang integrasi teknologi IoT dan robotika dalam pemantauan infrastruktur kelistrikan. Temuan penelitian ini dapat menjadi acuan bagi pengembangan lebih lanjut di bidang teknologi otomatisasi dan robotika.
