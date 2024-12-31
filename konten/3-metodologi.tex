@@ -163,3 +163,69 @@ Setelah komponen berhasil terdeteksi oleh \emph{YOLOv8}, tahap selanjutnya adala
 
 Deteksi komponen terlebih dahulu sangat penting karena setiap komponen memiliki ambang batas suhu \emph{overheat} yang berbeda. Tanpa mengetahui jenis komponen yang terdeteksi, sulit untuk menentukan apakah suhu tersebut melebihi batas aman atau tidak. Oleh karena itu, identifikasi komponen terlebih dahulu memastikan bahwa segmentasi suhu yang dilakukan pada \emph{bounding box} yang terdeteksi relevan dan akurat. Berdasarkan data ambang batas suhu masing-masing komponen.
 
+\section{Implementasi \emph{Perception Package}}
+Berikut ini merupakan implementasi dari desain \emph{Perception Package} yang telah dijelaskan sebelumnya.
+
+\subsection{\emph{Localization Node}}
+Implementasi \emph{Localization Node} bertujuan untuk mengidentifikasi posisi robot dalam peta menggunakan data dari sensor IMU, LiDAR, dan GPS. Posisi robot dihitung dengan memanfaatkan algoritma yang menggabungkan informasi dari sensor-sensor tersebut. Proses ini menggunakan \emph{Direct LiDAR Inertial Odometry} (\emph{DLIO}) untuk meningkatkan presisi estimasi posisi. Berikut adalah algoritma seleksi posisi dan orientasi robot yang diterapkan:
+
+\begin{algorithm}
+    \caption{Seleksi Posisi dan Orientasi Robot}
+    \begin{algorithmic}[1]
+    \State \textbf{Input:} IMU data, LiDAR data, GPS data
+    \State \textbf{Output:} Robot position and orientation
+    \State $GPS\_Accuracy \gets$ GPS.status.service
+    \State $DLIO\_Pos, DLIO\_Orientation \gets$ Run DLIO (LiDAR + IMU)
+    \If {$GPS\_Accuracy \geq Threshold$}
+        \State $Position \gets Position\_GPS$
+        \State $Orientation \gets Orientation\_IMU$
+    \Else
+        \State $Position \gets Position\_DLIO$
+        \State $Orientation \gets Orientation\_DLIO$
+    \EndIf
+    \end{algorithmic}
+\end{algorithm}
+
+Pada algoritma di atas, robot memilih sumber data posisi berdasarkan akurasi GPS. Jika akurasi GPS memenuhi ambang batas yang telah ditentukan, maka posisi robot diambil dari data GPS, sementara orientasi diambil dari sensor IMU. Namun, jika akurasi GPS rendah, robot akan mengandalkan estimasi posisi dan orientasi yang dihasilkan dari \emph{DLIO}, yang menggabungkan data dari LiDAR dan IMU.
+
+Implementasi \emph{Localization Node} diuji pada robot iCar di kampus ITS. Uji coba ini dilakukan dengan mengulang rute yang sama dua kali untuk memverifikasi presisi estimasi posisi. Hasil yang diperoleh menunjukkan bahwa robot dapat mendeteksi posisinya dengan sangat akurat, yang tercermin dari kedua pengulangan yang memberikan hasil yang sangat konsisten dalam hal posisi dan orientasi.
+
+\begin{figure}[H] 
+  \centering
+  \includegraphics[scale=0.22]{gambar/dlio_its.png}
+  \caption{\emph{DLIO} pada jalan kampus ITS}
+  \label{fig:DLIO pada jalan kampus ITS}
+\end{figure}
+
+\section{Implementasi \emph{Control Package}}
+Berikut ini merupakan implementasi dari desain \emph{Control Package} yang telah dijelaskan sebelumnya.
+
+\begin{algorithm}
+  \caption{Algoritma Path Following Robot}
+  \begin{algorithmic}[1]
+  \State \textbf{Input:} Current position (x, y, yaw), Path (array of poses: x, y)
+  \State \textbf{Output:} Velocity in x-direction ($v_x$) and Angular velocity ($\omega_z$)
+  \While {not reached final waypoint}
+      \State $wp \gets path[path\_idx]$
+      \State $prev\_wp \gets path[path\_idx - 1]$
+      
+      \State \textbf{Calculate Perpendicular Distance Error:}
+      \State $y_2 - y_1 \gets wp.y - prev\_wp.y$
+      \State $x_2 - x_1 \gets wp.x - prev\_wp.x$
+      \State $perpendicular\_distance \gets \frac{|(y_2 - y_1) \cdot current\_pose.x - (x_2 - x_1) \cdot current\_pose.y + wp.x \cdot prev\_wp.y - wp.y \cdot prev\_wp.x|}{\sqrt{(y_2 - y_1)^2 + (x_2 - x_1)^2}}$
+      
+      \State \textbf{Calculate Angle Error:}
+      \State $angle\_error \gets atan2(wp.y - prev\_wp.y, wp.x - prev\_wp.x) - current\_pose.yaw$
+      \State $angle\_error \gets (angle\_error + \pi) \bmod (2\pi) - \pi$ \Comment{Normalize angle to [-\(\pi\), \(\pi\)]}
+
+
+      \If {$perpendicular\_distance < threshold\_distance$ and $|angle\_error| < threshold\_angle$}
+          \State $path\_idx \gets path\_idx + 1$
+      \Else
+          \State $v_x \gets PID_v (perpendicular\_distance)$
+          \State $\omega_z \gets PID_\omega (angle\_error)$
+      \EndIf
+  \EndWhile
+  \end{algorithmic}
+\end{algorithm}
+
