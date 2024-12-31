@@ -127,3 +127,39 @@ Error yang didapat kemudian di proses dengan menggunakan \emph{PID controller} u
 \subsubsection{\emph{Obstacle Avoidance Node}}
 \emph{Obstacle Avoidance Node} bertugas untuk mendeteksi obyek pada rute dan menghindari tabrakan saat mengikuti \emph{waypoint}. Robot menggunakan data LiDAR dari \emph{HARDWARE INTERFACE}, yang diproses dengan algoritma \emph{Braitenberg} untuk mendeteksi obyek. Algoritma ini menghasilkan nilai \emph{gain} yang mengatur kecepatan robot dalam menghindari obyek. Jika obyek terdeteksi, robot akan mengurangi kecepatan atau mengubah arah. Setelah obyek tidak terdeteksi, robot akan kembali ke rute dan melanjutkan pergerakan menuju \emph{waypoint} berikutnya.
 
+\section{Desain Antarmuka Pengguna (\emph{User Interface}) Sistem Kontrol}
+
+Sistem ini menggunakan antarmuka berbasis web GUI yang dibangun dengan \emph{Next.js 14} dan \emph{roslibjs} untuk integrasi dengan ROS. Sistem akan di-\emph{deploy} pada internet menggunakan \emph{Node.js}. \emph{PostgreSQL} digunakan sebagai database, sementara \emph{Prisma} berfungsi sebagai \emph{ORM} untuk mengelola data. Sistem GUI dapat dibagi menjadi tiga bagian utama yang memiliki fungsi sebagai berikut:
+
+\subsection{\emph{Authentication Page}}
+
+\emph{Authentication Page} adalah halaman yang ditampilkan kepada pengguna yang ingin mengakses sistem. Sistem ini menggunakan \emph{next/auth} untuk mengelola autentikasi pengguna. Pengguna dapat mendaftarkan akun melalui formulir pendaftaran. Setelah proses pendaftaran, \emph{next/auth} akan mengelola autentikasi dan menyimpan data pengguna di \emph{PostgreSQL}.
+
+\subsection{\emph{Robot Information}}
+
+\emph{Robot Information} adalah halaman yang menampilkan informasi terkait robot, seperti nama, versi, dan spesifikasi dari robot yang terdaftar dalam sistem. Halaman ini juga menampilkan status real-time robot, termasuk posisi, kecepatan, dan arah gerak. Pengguna dapat mendaftarkan robot baru melalui halaman ini, sehingga robot dapat terdaftar dan digunakan dalam sistem. Setiap robot yang didaftarkan akan memiliki ID unik yang digunakan untuk mengidentifikasi robot tersebut di seluruh sistem.
+
+\subsection{\emph{Patrol Controller}}
+
+\emph{Patrol Controller} adalah halaman utama yang digunakan untuk mengontrol robot dan memantau operasi patroli. Sistem ini mendukung operasi multi-robot, sehingga setiap robot yang terdaftar akan memiliki \emph{Patrol Controller} masing-masing. Halaman ini menampilkan peta interaktif yang menunjukkan posisi robot, rute patroli, dan status \emph{real-time} robot. Selain itu, citra termal robot juga ditampilkan untuk mendeteksi komponen yang mengalami \emph{overheat}. 
+
+Pengguna dapat memilih robot yang ingin dikontrol menggunakan ID robot yang telah didaftarkan di \emph{Robot Information}. Setiap robot memiliki kontrol manual dan otomatis melalui tombol yang tersedia di halaman ini. Di \emph{Patrol Controller}, pengguna juga dapat membuat atau mengubah rute patroli dan menetapkan jadwal patroli untuk setiap robot secara terpisah. Dengan sistem multi-robot ini, pengguna dapat memantau dan mengelola beberapa robot secara bersamaan, masing-masing dengan kontrol dan informasi yang terpisah berdasarkan ID robot yang dipilih.
+
+\section{\emph{Computer Vision}}
+
+Dalam mendeteksi komponen yang mengalami \emph{overheat}, peneliti menggunakan model \emph{YOLOv8}. Pemilihan model ini didasarkan pada kemampuannya dalam deteksi objek yang akurat dan kecepatan proses yang optimal. Proses deteksi komponen \emph{overheat} dilakukan melalui beberapa tahapan sebagai berikut:
+
+\subsection{Pembuatan Dataset}
+Dataset citra termal dari komponen gardu listrik dikumpulkan dan diproses untuk melatih model deteksi. Pengumpulan data dilakukan melalui platform \emph{Roboflow}, di mana setiap citra diberi label secara akurat untuk mengidentifikasi jenis komponen yang terdeteksi.
+
+\subsection{Pelatihan Model \emph{YOLOv8}}
+Model \emph{YOLOv8} dilatih menggunakan dataset yang telah disiapkan. Proses pelatihan mencakup penyesuaian hiperparameter dan penggunaan augmentasi data untuk meningkatkan akurasi model. Evaluasi kinerja model dilakukan dengan menggunakan metrik \emph{mean Average Precision} (mAP) dan \emph{Intersection over Union} (IoU) untuk menilai kemampuan deteksi. Setelah pelatihan, model diuji menggunakan dataset validasi untuk memastikan kinerja yang optimal.
+
+\subsection{Konversi ke \emph{TensorRT}}
+Untuk meningkatkan kecepatan deteksi dan mengurangi beban komputasi, model \emph{YOLOv8} dikonversi ke format \emph{TensorRT} (TRT). Model yang awalnya dalam format \emph{PyTorch} diekspor ke format \emph{Open Neural Network Exchange} (ONNX) menggunakan perintah dari \emph{library Ultralytics}. Setelah model diekspor ke format ONNX, konversi ke format TRT dilakukan dengan perintah \texttt{trtexec} dari NVIDIA untuk mempercepat proses inferensi.
+
+\subsection{Deteksi Suhu Komponen}
+Setelah komponen berhasil terdeteksi oleh \emph{YOLOv8}, tahap selanjutnya adalah menganalisis suhu pada komponen dengan menggunakan segmentasi warna dalam ruang warna \emph{HSV} (\emph{Hue, Saturation, Value}) pada \emph{bounding box} yang terdeteksi. Metode ini digunakan untuk mengidentifikasi area dalam citra termal yang memiliki suhu tinggi, biasanya ditunjukkan dengan warna seperti merah, kuning, atau oranye, sesuai dengan dataset kamera termal yang digunakan.
+
+Deteksi komponen terlebih dahulu sangat penting karena setiap komponen memiliki ambang batas suhu \emph{overheat} yang berbeda. Tanpa mengetahui jenis komponen yang terdeteksi, sulit untuk menentukan apakah suhu tersebut melebihi batas aman atau tidak. Oleh karena itu, identifikasi komponen terlebih dahulu memastikan bahwa segmentasi suhu yang dilakukan pada \emph{bounding box} yang terdeteksi relevan dan akurat. Berdasarkan data ambang batas suhu masing-masing komponen.
+
