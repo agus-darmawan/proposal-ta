@@ -54,4 +54,76 @@ Penelitian ini menggunakan robot \emph{quadruped legged} tipe \emph{DeepRobotics
 
 Penempatan sensor LiDAR di bagian atas robot memungkinkan sensor untuk memperoleh pandangan yang lebih luas, sedangkan kamera termal ditempatkan di posisi strategis untuk mendeteksi perubahan suhu pada komponen gardu listrik. \emph{Electrical box} dipasang di bagian belakang robot untuk mengoptimalkan distribusi berat dan memastikan kestabilan robot.
 
+\section{Desain Elektrikal}
+
+Desain elektrikal robot mencakup perancangan sistem distribusi daya dan komunikasi yang bertujuan untuk mengintegrasikan komponen-komponen tambahan ke dalam sistem robot yang sudah ada. Komponen-komponen tambahan tersebut dirancang untuk mendukung kemampuan operasi otonom robot. Desain elektrikal lengkap dari robot ini dapat dilihat pada Gambar \ref{fig:Desain electrical robot}.
+
+\begin{figure}[H] \centering
+  \includegraphics[scale=0.72]{gambar/electrical.png} \caption{Desain \emph{block diagram} sistem distribusi daya dan komunikasi elektrikal robot} 
+   \label{fig:Desain electrical robot} 
+\end{figure}
+
+Dalam hal distribusi daya, tegangan 24V yang disuplai oleh robot diturunkan menjadi 12V menggunakan modul \emph{buck converter} untuk memenuhi kebutuhan daya LiDAR dan modem. Komponen lain yang memerlukan tegangan 5V memperoleh catu daya dari sumber 5V yang tersedia pada robot. Selain itu, terdapat modul GPS dan \emph{thermal camera} yang terhubung melalui port USB. Sementara itu, LiDAR dan modem terhubung melalui switch dan kemudian masuk ke dalam sistem robot melalui LAN. Sistem komunikasi menggunakan protokol \emph{wireless} melalui modem yang terhubung ke jaringan \emph{BTS provider} untuk mengirimkan data posisi dan informasi deteksi \emph{overheat} ke \emph{control station}.
+
+\section{Arsitektur Perangkat Lunak Robot}
+Arsitektur perangkat lunak robot menggunakan \emph{Robot Operating System (ROS) 1 Noetic}, ROS berfungsi sebagai \emph{middleware} untuk mendukung pengembangan program secara modular. ROS memfasilitasi pengembangan dengan menggunakan \emph{package} dan \emph{node} yang saling berinteraksi, sehingga memungkinkan pengembangan yang efisien dan terstruktur. Pemilihan ROS 1 Noetic didasarkan pada kompatibilitasnya dengan robot \emph{DeepRobotics Jueying Lite 3}. Integrasi ini memungkinkan sistem navigasi yang dirancang untuk memerintahkan robot bergerak pada sumbu translasi \(x\), \(y\), dan sumbu rotasi \(z\) (\emph{angular z}) dengan nilai kecepatan tertentu tanpa perlu mengembangkan ulang program \emph{kinematic} atau kontrol pergerakan robot yang sudah ditangani oleh program bawaan \emph{DeepRobotics Jueying Lite 3}. Arsitektur perangkat lunak pada robot dapat dibagi dibagi menjadi tiga \emph{package}, yaitu \emph{hardware interface}, dan \emph{control}, \emph{perception}. Desain arsitektur perangkat lunak robot dapat dilihat pada Gambar \ref{fig:Desain perangkat lunak robot}.
+
+\begin{figure}[H] \centering
+  \includegraphics[scale=0.7]{gambar/software.png}
+  \caption{Desain arsitektur perangkat lunak robot} 
+  \label{fig:Desain perangkat lunak robot}
+\end{figure}
+
+Berdasarkan gambar diatas dapat dilihat \emph{HARDWARE INTERFACE} akan memberikan data GPS, LiDAR, dan IMU yang diperoleh dari sensor GPS dan LiDAR ke \emph{PERCEPTION}. \emph{PERCEPTION} akan menggabungkan data dari \emph{HARDWARE INTERFACE} dengan \emph{odometry} yang diperoleh dari \emph{MOTION HOST} untuk mendeteksi posisi dan orientasi robot dalam peta. Selain itu, \emph{PERCEPTION}. \emph{PERCEPTION}  juga akan memproses data dari kamera termal untuk mendeteksi adanya \emph{overheat} pada komponen gardu listrik serta memperkirakan posisi komponen yang mengalami \emph{overheat}. Hasil deteksi dari \emph{PERCEPTION} akan dikirim ke \emph{CONTROL STATION} melalui \emph{websocket}, dan \emph{PERCEPTION} juga akan melakukan \emph{broadcast} posisi robot (\emph{TF}) dan marker LiDAR ke map.  Disisi lain \emph{CONTROL STATION} akan menerima data posisi dan lokasi dari \emph{PERCEPTION} serta rute yang dikirim oleh \emph{CONTROL STATION}. Ketika perintah \emph{start} diterima dari \emph{CONTROL STATION}, robot akan merencanakan trajektori untuk melakukan patroli sambil menghindari \emph{obstacle} yag ada pada rute. Data trajektori kemudian akan dikirim ke \emph{MOTION HOST} untuk menggerakkan robot. 
+
+\subsection{\emph{Hardware Interface Package}}
+\emph{Hardware interface} mengelola interaksi dengan sensor. \emph{Package} ini terdiri dari dua \emph{node} dengan tugas masing-masing. Node pertama, \emph{GPS Interface}, membaca data dari sensor GPS dan menjalankan \emph{Real Time Kinematic} (RTK) untuk menghubungkan sensor GPS robot dengan stasiun basis, memberikan koreksi sinyal satelit dan memungkinkan pengukuran posisi yang lebih presisi. Node kedua, \emph{LiDAR Interface}, membaca data sensor LiDAR dan mengirimkan \emph{point cloud} ke \emph{perception}, yang merepresentasikan objek di sekitar robot.
+
+\subsection{Perception}
+\emph{Perception} adalah \emph{package} yang berfungsi untuk memproses data sensor guna memungkinkan robot memahami lingkungan sekitarnya. \emph{Package} ini terdiri dari beberapa \emph{node} utama, yang masing-masing memiliki fungsi tertentu diantaranya adalah sebagai berikut.
+
+\subsubsection{\emph{Localization Node}}
+Dalam penelitian ini, robot menggunakan \emph{predefined topological map}, yang diambil dari Google Maps atau aplikasi lainnya. Posisi awal robot atau \emph{initial state} ditentukan pada titik tetap (\emph{fixed position}) dalam peta topologi yang telah ditentukan sebelumnya. Dalam menentukan orientasi, sistem ini menggunakan data \emph{IMU}, \emph{GPS}, dan \emph{LiDAR} yang didapat dari \emph{HARDWARE INTERFACE} untuk menghitung orientasi robot dalam peta topologi. Untuk menentukan posisi robot, digunakan dua metode utama, yaitu \emph{GPS} dan \emph{Direct LiDAR Inertial Odometry} (DLIO). Metode \emph{GPS} digunakan untuk menentukan posisi robot dalam koordinat geografis. Namun, di area yang dipenuhi dengan interferensi elektromagnetik, seperti gardu listrik, sinyal \emph{GPS} dapat terpengaruh, sehingga menurunkan kualitas akurasi di beberapa kondisi. Untuk mengatasi hal ini, jika sinyal \emph{GPS} terdeteksi berada di bawah ambang batas akurasi yang dibutuhkan, sistem secara otomatis beralih menggunakan metode \emph{Direct LiDAR Inertial Odometry} (DLIO). \emph{DLIO} menggabungkan informasi dari sensor \emph{LiDAR} dan \emph{IMU} (\emph{Inertial Measurement Unit}) yang digabungkan dengan odometri dengan menggunakan \emph{Extended Kalman Filter} (EKF) untuk menghitung posisi dan orientasi robot.
+
+\subsubsection{\emph{Overheat Detection Node}}
+\emph{Node} ini berfungsi untuk mendeteksi komponen yang mengalami suhu tinggi (\emph{overheat}) menggunakan kamera termal yang terpasang pada robot. Citra termal yang diperoleh diklasifikasikan menggunakan \emph{YOLOv8} untuk mendeteksi komponen gardu listrik. Setelah komponen terdeteksi, analisis suhu dilakukan pada bounding box menggunakan teknik kontur dengan threshold warna pada ruang warna HSV (\emph{Hue}, \emph{Saturation}, \emph{Value}). Thresholding dilakukan pada saluran \emph{HSV} untuk mengidentifikasi suhu tinggi, dan kontur diterapkan untuk memetakan area yang menunjukkan suhu berlebih. Jika suhu komponen melebihi ambang batas, komponen tersebut diklasifikasikan sebagai \emph{overheat}.
+
+\subsection{\emph{Overheat pose estimation Node}}
+\emph{Node} ini berfungsi untuk mendeteksi posisi komponen yang mengalami \emph{overheat}. Setelah komponen yang mengalami \emph{overheat} terdeteksi, \emph{node} ini akan memperkirakan posisi komponen tersebut dalam peta topologi. Posisi komponen diestimasi berdasarkan posisi robot yang diperoleh dari \emph{Localization Node} dan data LiDAR yang diperoleh dari \emph{HARDWARE INTERFACE}. Data LiDAR digunakan untuk memetakan area sekitar robot dan mengidentifikasi posisi relatif komponen yang mengalami \emph{overheat} terhadap posisi robot. Hasil estimasi posisi kemudian dikirim ke \emph{CONTROL STATION} untuk ditampilkan pada \emph{graphical user interface (GUI)}.
+
+\subsection{\emph{Control}}
+\emph{Control} adalah \emph{package} yang berfungsi untuk mengelola pergerakan robot. \emph{Package} ini terdiri dari beberapa \emph{node} utama, diantaranya adalah sebagai berikut.
+
+\subsubsection{\emph{Patrol Control Node}}
+
+\emph{Node} ini berfungsi sebagai otak
+ dari robot yang bertanggung jawab untuk mengatur pergerakan robot berdasarkan perintah yang diterima dari \emph{CONTROL STATION}. Perintah yang diterima meliputi perintah untuk memulai patroli, menghentikan patroli, dan mengubah rute patroli. \emph{Patrol Control Node} akan merencanakan trajektori robot berdasarkan rute yang diterima berupa \emph{waypoint} dan mengirimkan perintah ke \emph{MOTION HOST} untuk menggerakkan robot. Dalam mengikuti \emph{waypoint}, robot akan menggunakan algoritma \emph{path following} yang dibuat oleh Akbar 2022. Algoritma ini menggunakanposisi dan orientasi dari \emph{Localization Node} sebagai referensi kontrol. Pada kontrol ini terdapat \emph{WaypointControl}, yang berperan untuk mengarahkan robot menuju titik yang ditentukan. Adapun rumus error yang digunakan dapat dilihat pada Persamaan \ref{eq:error}. Representasi error yang dimaksud dijelaskan melalui Gambar \ref{fig:error_waypointcontrol} \cite{zidan2022}.
+
+\begin{figure}[H] \centering
+  \includegraphics[scale=0.8]{gambar/waypoint_control.png}
+  \caption{Representasi error pada \emph{WaypointControl}}
+  \label{fig:error_waypointcontrol}
+\end{figure}
+
+\begin{equation}
+  \label{eq:error}
+  \mathrm{error} = \mathrm{heading}_{\mathrm{error}} + \mathrm{perpendicular\ distance}_{\mathrm{error}}.
+\end{equation}
+
+Adapun kondisi dimana waypoint telah tercapai adalah apabila kondisi berikut ini terpenuhi:
+
+\begin{equation}
+  \label{eq:condition_distance}
+  \mathrm{distance\ to\ wp} < \mathrm{threshold\ distance}.
+\end{equation}
+
+\begin{equation}
+  \label{eq:condition_angle}
+  \mathrm{angle\ to\ wp} > \mathrm{threshold\ angle}.
+\end{equation}
+
+Error yang didapat kemudian di proses dengan menggunakan \emph{PID controller} untuk mendapatkan output pergerakan robot yang akan dikirim ke \emph{MOTION HOST}.
+
+\subsubsection{\emph{Obstacle Avoidance Node}}
+\emph{Obstacle Avoidance Node} bertugas untuk mendeteksi obyek pada rute dan menghindari tabrakan saat mengikuti \emph{waypoint}. Robot menggunakan data LiDAR dari \emph{HARDWARE INTERFACE}, yang diproses dengan algoritma \emph{Braitenberg} untuk mendeteksi obyek. Algoritma ini menghasilkan nilai \emph{gain} yang mengatur kecepatan robot dalam menghindari obyek. Jika obyek terdeteksi, robot akan mengurangi kecepatan atau mengubah arah. Setelah obyek tidak terdeteksi, robot akan kembali ke rute dan melanjutkan pergerakan menuju \emph{waypoint} berikutnya.
 
