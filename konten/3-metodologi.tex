@@ -83,7 +83,31 @@ Berdasarkan gambar diatas dapat dilihat \emph{HARDWARE INTERFACE} akan memberika
 \emph{Perception} adalah \emph{package} yang berfungsi untuk memproses data sensor guna memungkinkan robot memahami lingkungan sekitarnya. \emph{Package} ini terdiri dari beberapa \emph{node} utama, yang masing-masing memiliki fungsi tertentu diantaranya adalah sebagai berikut.
 
 \subsubsection{\emph{Localization Node}}
-Dalam penelitian ini, robot menggunakan \emph{predefined topological map}, yang diambil dari Google Maps atau aplikasi lainnya. Posisi awal robot atau \emph{initial state} ditentukan pada titik tetap (\emph{fixed position}) dalam peta topologi yang telah ditentukan sebelumnya. Dalam menentukan orientasi, sistem ini menggunakan data \emph{IMU}, \emph{GPS}, dan \emph{LiDAR} yang didapat dari \emph{HARDWARE INTERFACE} untuk menghitung orientasi robot dalam peta topologi. Untuk menentukan posisi robot, digunakan dua metode utama, yaitu \emph{GPS} dan \emph{Direct LiDAR Inertial Odometry} (DLIO). Metode \emph{GPS} digunakan untuk menentukan posisi robot dalam koordinat geografis. Namun, di area yang dipenuhi dengan interferensi elektromagnetik, seperti gardu listrik, sinyal \emph{GPS} dapat terpengaruh, sehingga menurunkan kualitas akurasi di beberapa kondisi. Untuk mengatasi hal ini, jika sinyal \emph{GPS} terdeteksi berada di bawah ambang batas akurasi yang dibutuhkan, sistem secara otomatis beralih menggunakan metode \emph{Direct LiDAR Inertial Odometry} (DLIO). \emph{DLIO} menggabungkan informasi dari sensor \emph{LiDAR} dan \emph{IMU} (\emph{Inertial Measurement Unit}) yang digabungkan dengan odometri dengan menggunakan \emph{Extended Kalman Filter} (EKF) untuk menghitung posisi dan orientasi robot.
+Dalam penelitian ini, robot menggunakan \emph{predefined topological map}, yang diambil dari Google Maps atau aplikasi lainnya. Posisi awal robot atau \emph{initial state} ditentukan pada titik tetap (\emph{fixed position}) dalam peta topologi yang telah ditentukan sebelumnya. Dalam menentukan orientasi, sistem ini menggunakan data \emph{IMU}, \emph{GPS}, dan \emph{LiDAR} yang didapat dari \emph{HARDWARE INTERFACE} untuk menghitung orientasi robot dalam peta topologi. Untuk menentukan posisi robot, digunakan dua metode utama, yaitu \emph{GPS} dan \emph{Direct LiDAR Inertial Odometry} (DLIO).Metode \emph{GPS} digunakan untuk menentukan posisi robot dalam koordinat geografis. Namun, di area yang dipenuhi dengan interferensi elektromagnetik, seperti gardu listrik, sinyal \emph{GPS} dapat terpengaruh, sehingga menurunkan kualitas akurasi di beberapa kondisi. Untuk mengatasi hal ini, jika sinyal \emph{GPS} terdeteksi berada di bawah ambang batas akurasi yang dibutuhkan, sistem secara otomatis beralih menggunakan metode \emph{Direct LiDAR Inertial Odometry} (DLIO) seperti pada Algoritma \ref{alg:Seleksi Posisi dan Orientasi Robot}.
+
+\begin{algorithm}
+  \caption{Seleksi Posisi dan Orientasi Robot}
+  \label{alg:Seleksi Posisi dan Orientasi Robot}
+  \begin{algorithmic}[1]
+  \State \textbf{Input:} IMU data, LiDAR data, GPS data, Odometry data
+  \State \textbf{Output:} Robot position and orientation
+  \State $GPS\_Accuracy \gets$ GPS.status.service
+  \State $EKF\_Fusion \gets$ Run Extended Kalman Filter (IMU + Odometry)
+  \State $Fused\_IMU \gets$ EKF\_Fusion.output
+  \State $DLIO\_Pos, DLIO\_Orientation \gets$ Run DLIO (LiDAR + Fused\_IMU)
+  \If {$GPS\_Accuracy \geq Threshold$}
+      \State $Position \gets Position\_GPS$
+      \State $Orientation \gets Orientation\_IMU$
+  \Else
+      \State $Position \gets Position\_DLIO$
+      \State $Orientation \gets Orientation\_DLIO$
+  \EndIf
+  \end{algorithmic}
+\end{algorithm}
+
+
+\emph{DLIO} menggabungkan informasi dari sensor \emph{LiDAR} dan \emph{IMU} (\emph{Inertial Measurement Unit}) yang telah digabungkan dengan odometri dengan menggunakan \emph{Extended Kalman Filter} (EKF) untuk menghitung posisi dan orientasi robot. 
+
 
 \subsubsection{\emph{Overheat Detection Node}}
 \emph{Node} ini berfungsi untuk mendeteksi komponen yang mengalami suhu tinggi (\emph{overheat}) menggunakan kamera termal yang terpasang pada robot. Citra termal yang diperoleh diklasifikasikan menggunakan \emph{YOLOv8} untuk mendeteksi komponen gardu listrik. Setelah komponen terdeteksi, analisis suhu dilakukan pada bounding box menggunakan teknik kontur dengan threshold warna pada ruang warna HSV (\emph{Hue}, \emph{Saturation}, \emph{Value}). Thresholding dilakukan pada saluran \emph{HSV} untuk mengidentifikasi suhu tinggi, dan kontur diterapkan untuk memetakan area yang menunjukkan suhu berlebih. Jika suhu komponen melebihi ambang batas, komponen tersebut diklasifikasikan sebagai \emph{overheat}.
@@ -122,76 +146,7 @@ Adapun kondisi dimana waypoint telah tercapai adalah apabila kondisi berikut ini
   \mathrm{angle\ to\ wp} > \mathrm{threshold\ angle}.
 \end{equation}
 
-Error yang didapat kemudian di proses dengan menggunakan \emph{PID controller} untuk mendapatkan output pergerakan robot yang akan dikirim ke \emph{MOTION HOST}.
-
-\subsubsection{\emph{Obstacle Avoidance Node}}
-\emph{Obstacle Avoidance Node} bertugas untuk mendeteksi obyek pada rute dan menghindari tabrakan saat mengikuti \emph{waypoint}. Robot menggunakan data LiDAR dari \emph{HARDWARE INTERFACE}, yang diproses dengan algoritma \emph{Braitenberg} untuk mendeteksi obyek. Algoritma ini menghasilkan nilai \emph{gain} yang mengatur kecepatan robot dalam menghindari obyek. Jika obyek terdeteksi, robot akan mengurangi kecepatan atau mengubah arah. Setelah obyek tidak terdeteksi, robot akan kembali ke rute dan melanjutkan pergerakan menuju \emph{waypoint} berikutnya.
-
-\section{Desain Antarmuka Pengguna (\emph{User Interface}) Sistem Kontrol}
-
-Sistem ini menggunakan antarmuka berbasis web GUI yang dibangun dengan \emph{Next.js 14} dan \emph{roslibjs} untuk integrasi dengan ROS. Sistem akan di-\emph{deploy} pada internet menggunakan \emph{Node.js}. \emph{PostgreSQL} digunakan sebagai database, sementara \emph{Prisma} berfungsi sebagai \emph{ORM} untuk mengelola data. Sistem GUI dapat dibagi menjadi tiga bagian utama yang memiliki fungsi sebagai berikut:
-
-\subsection{\emph{Authentication Page}}
-
-\emph{Authentication Page} adalah halaman yang ditampilkan kepada pengguna yang ingin mengakses sistem. Sistem ini menggunakan \emph{next/auth} untuk mengelola autentikasi pengguna. Pengguna dapat mendaftarkan akun melalui formulir pendaftaran. Setelah proses pendaftaran, \emph{next/auth} akan mengelola autentikasi dan menyimpan data pengguna di \emph{PostgreSQL}.
-
-\subsection{\emph{Robot Information}}
-
-\emph{Robot Information} adalah halaman yang menampilkan informasi terkait robot, seperti nama, versi, dan spesifikasi dari robot yang terdaftar dalam sistem. Halaman ini juga menampilkan status real-time robot, termasuk posisi, kecepatan, dan arah gerak. Pengguna dapat mendaftarkan robot baru melalui halaman ini, sehingga robot dapat terdaftar dan digunakan dalam sistem. Setiap robot yang didaftarkan akan memiliki ID unik yang digunakan untuk mengidentifikasi robot tersebut di seluruh sistem.
-
-\subsection{\emph{Patrol Controller}}
-
-\emph{Patrol Controller} adalah halaman utama yang digunakan untuk mengontrol robot dan memantau operasi patroli. Sistem ini mendukung operasi multi-robot, sehingga setiap robot yang terdaftar akan memiliki \emph{Patrol Controller} masing-masing. Halaman ini menampilkan peta interaktif yang menunjukkan posisi robot, rute patroli, dan status \emph{real-time} robot. Selain itu, citra termal robot juga ditampilkan untuk mendeteksi komponen yang mengalami \emph{overheat}. 
-
-Pengguna dapat memilih robot yang ingin dikontrol menggunakan ID robot yang telah didaftarkan di \emph{Robot Information}. Setiap robot memiliki kontrol manual dan otomatis melalui tombol yang tersedia di halaman ini. Di \emph{Patrol Controller}, pengguna juga dapat membuat atau mengubah rute patroli dan menetapkan jadwal patroli untuk setiap robot secara terpisah. Dengan sistem multi-robot ini, pengguna dapat memantau dan mengelola beberapa robot secara bersamaan, masing-masing dengan kontrol dan informasi yang terpisah berdasarkan ID robot yang dipilih.
-
-\section{\emph{Computer Vision}}
-
-Dalam mendeteksi komponen yang mengalami \emph{overheat}, peneliti menggunakan model \emph{YOLOv8}. Pemilihan model ini didasarkan pada kemampuannya dalam deteksi objek yang akurat dan kecepatan proses yang optimal. Proses deteksi komponen \emph{overheat} dilakukan melalui beberapa tahapan sebagai berikut:
-
-\subsection{Pembuatan Dataset}
-Dataset citra termal dari komponen gardu listrik dikumpulkan dan diproses untuk melatih model deteksi. Pengumpulan data dilakukan melalui platform \emph{Roboflow}, di mana setiap citra diberi label secara akurat untuk mengidentifikasi jenis komponen yang terdeteksi.
-
-\subsection{Pelatihan Model \emph{YOLOv8}}
-Model \emph{YOLOv8} dilatih menggunakan dataset yang telah disiapkan. Proses pelatihan mencakup penyesuaian hiperparameter dan penggunaan augmentasi data untuk meningkatkan akurasi model. Evaluasi kinerja model dilakukan dengan menggunakan metrik \emph{mean Average Precision} (mAP) dan \emph{Intersection over Union} (IoU) untuk menilai kemampuan deteksi. Setelah pelatihan, model diuji menggunakan dataset validasi untuk memastikan kinerja yang optimal.
-
-\subsection{Konversi ke \emph{TensorRT}}
-Untuk meningkatkan kecepatan deteksi dan mengurangi beban komputasi, model \emph{YOLOv8} dikonversi ke format \emph{TensorRT} (TRT). Model yang awalnya dalam format \emph{PyTorch} diekspor ke format \emph{Open Neural Network Exchange} (ONNX) menggunakan perintah dari \emph{library Ultralytics}. Setelah model diekspor ke format ONNX, konversi ke format TRT dilakukan dengan perintah \texttt{trtexec} dari NVIDIA untuk mempercepat proses inferensi.
-
-\subsection{Deteksi Suhu Komponen}
-Setelah komponen berhasil terdeteksi oleh \emph{YOLOv8}, tahap selanjutnya adalah menganalisis suhu pada komponen dengan menggunakan segmentasi warna dalam ruang warna \emph{HSV} (\emph{Hue, Saturation, Value}) pada \emph{bounding box} yang terdeteksi. Metode ini digunakan untuk mengidentifikasi area dalam citra termal yang memiliki suhu tinggi, biasanya ditunjukkan dengan warna seperti merah, kuning, atau oranye, sesuai dengan dataset kamera termal yang digunakan.
-
-Deteksi komponen terlebih dahulu sangat penting karena setiap komponen memiliki ambang batas suhu \emph{overheat} yang berbeda. Tanpa mengetahui jenis komponen yang terdeteksi, sulit untuk menentukan apakah suhu tersebut melebihi batas aman atau tidak. Oleh karena itu, identifikasi komponen terlebih dahulu memastikan bahwa segmentasi suhu yang dilakukan pada \emph{bounding box} yang terdeteksi relevan dan akurat. Berdasarkan data ambang batas suhu masing-masing komponen.
-
-\section{Implementasi \emph{Perception Package}}
-Berikut ini merupakan implementasi dari desain \emph{Perception Package} yang telah dijelaskan sebelumnya.
-
-\subsection{\emph{Localization Node}}
-Implementasi \emph{Localization Node} bertujuan untuk mengidentifikasi posisi robot dalam peta menggunakan data dari sensor IMU, LiDAR, dan GPS. Posisi robot dihitung dengan memanfaatkan algoritma yang menggabungkan informasi dari sensor-sensor tersebut. Proses ini menggunakan \emph{Direct LiDAR Inertial Odometry} (\emph{DLIO}) untuk meningkatkan presisi estimasi posisi. Berikut adalah algoritma seleksi posisi dan orientasi robot yang diterapkan:
-
-\begin{algorithm}
-    \caption{Seleksi Posisi dan Orientasi Robot}
-    \begin{algorithmic}[1]
-    \State \textbf{Input:} IMU data, LiDAR data, GPS data
-    \State \textbf{Output:} Robot position and orientation
-    \State $GPS\_Accuracy \gets$ GPS.status.service
-    \State $DLIO\_Pos, DLIO\_Orientation \gets$ Run DLIO (LiDAR + IMU)
-    \If {$GPS\_Accuracy \geq Threshold$}
-        \State $Position \gets Position\_GPS$
-        \State $Orientation \gets Orientation\_IMU$
-    \Else
-        \State $Position \gets Position\_DLIO$
-        \State $Orientation \gets Orientation\_DLIO$
-    \EndIf
-    \end{algorithmic}
-\end{algorithm}
-
-Pada algoritma di atas, robot memilih sumber data posisi berdasarkan akurasi GPS. Jika akurasi GPS memenuhi ambang batas yang telah ditentukan, maka posisi robot diambil dari data GPS, sementara orientasi diambil dari sensor IMU. Namun, jika akurasi GPS rendah, robot akan mengandalkan estimasi posisi dan orientasi yang dihasilkan dari \emph{DLIO}, yang menggabungkan data dari LiDAR dan IMU.
-
-
-
-\section{Implementasi \emph{Control Package}}
-Berikut ini merupakan implementasi dari desain \emph{Control Package} yang telah dijelaskan sebelumnya.
+Error yang didapat kemudian di proses dengan menggunakan \emph{PID controller} untuk mendapatkan output pergerakan robot yang akan dikirim ke \emph{MOTION HOST}. Secara detail algoritma path following dapat dijabarkan sebagai berikut:
 
 \begin{algorithm}
   \caption{Algoritma Path Following Robot}
@@ -222,3 +177,52 @@ Berikut ini merupakan implementasi dari desain \emph{Control Package} yang telah
   \end{algorithmic}
 \end{algorithm}
 
+\subsubsection{\emph{Obstacle Avoidance Node}}
+\emph{Obstacle Avoidance Node} bertugas untuk mendeteksi obyek pada rute dan menghindari tabrakan saat mengikuti \emph{waypoint}. Robot menggunakan data LiDAR dari \emph{HARDWARE INTERFACE}, yang diproses dengan algoritma \emph{Braitenberg} untuk mendeteksi obyek. Algoritma ini menghasilkan nilai \emph{gain} yang mengatur kecepatan robot dalam menghindari obyek. Jika obyek terdeteksi, robot akan mengurangi kecepatan atau mengubah arah. Setelah obyek tidak terdeteksi, robot akan kembali ke rute dan melanjutkan pergerakan menuju \emph{waypoint} berikutnya.
+
+\section{Desain Antarmuka Pengguna (\emph{User Interface}) Sistem Kontrol}
+
+Sistem ini menggunakan antarmuka berbasis web GUI yang dibangun dengan \emph{Next.js 14} dan \emph{roslibjs} untuk integrasi dengan ROS. Sistem akan di-\emph{deploy} pada internet menggunakan \emph{Node.js}. \emph{PostgreSQL} digunakan sebagai database, sementara \emph{Prisma} berfungsi sebagai \emph{ORM} untuk mengelola data. Sistem GUI dapat dibagi menjadi tiga bagian utama yang memiliki fungsi sebagai berikut:
+
+\subsection{\emph{Authentication Page}}
+
+\emph{Authentication Page} adalah halaman yang ditampilkan kepada pengguna yang ingin mengakses sistem. Sistem ini menggunakan \emph{next/auth} untuk mengelola autentikasi pengguna. Pengguna dapat mendaftarkan akun melalui formulir pendaftaran. Setelah proses pendaftaran, \emph{next/auth} akan mengelola autentikasi dan menyimpan data pengguna di \emph{PostgreSQL}.
+
+\subsection{\emph{Robot Information}}
+
+\emph{Robot Information} adalah halaman yang menampilkan informasi terkait robot, seperti nama, versi, dan spesifikasi dari robot yang terdaftar dalam sistem. Halaman ini juga menampilkan status real-time robot, termasuk posisi robot. Pengguna dapat mendaftarkan robot baru melalui halaman ini, sehingga robot dapat terdaftar dan digunakan dalam sistem. Setiap robot yang didaftarkan akan memiliki ID unik yang digunakan untuk mengidentifikasi robot tersebut di seluruh sistem.
+\begin{figure}[H] \centering
+  \includegraphics[scale=0.37]{gambar/robot_ui.png}
+  \caption{Halaman \emph{Robot Information} pada GUI}
+  \label{fig:robot_info}
+\end{figure}
+
+\subsection{\emph{Patrol Controller}}
+
+\emph{Patrol Controller} adalah halaman utama yang digunakan untuk mengontrol robot dan memantau operasi patroli. Sistem ini mendukung operasi multi-robot, sehingga setiap robot yang terdaftar akan memiliki \emph{Patrol Controller} masing-masing. Halaman ini menampilkan peta interaktif yang menunjukkan posisi robot, rute patroli, dan status \emph{real-time} robot. Selain itu, citra termal robot juga ditampilkan untuk mendeteksi komponen yang mengalami \emph{overheat}. Seperti pada gambar berikut:
+
+\begin{figure}[H] \centering
+  \includegraphics[scale=0.5]{gambar/patrol_control.png}
+  \caption{Halaman \emph{Patrol Controller} pada GUI}
+  \label{fig:Patrol Controller}
+\end{figure}
+
+Pengguna dapat memilih robot yang ingin dikontrol menggunakan ID robot yang telah didaftarkan di \emph{Robot Information}. Setiap robot memiliki kontrol manual dan otomatis melalui tombol yang tersedia di halaman ini. Di \emph{Patrol Controller}, pengguna juga dapat membuat atau mengubah rute patroli dan menetapkan jadwal patroli untuk setiap robot secara terpisah. Dengan sistem multi-robot ini, pengguna dapat memantau dan mengelola beberapa robot secara bersamaan, masing-masing dengan kontrol dan informasi yang terpisah berdasarkan ID robot yang dipilih.
+
+\section{\emph{Computer Vision}}
+
+Dalam mendeteksi komponen yang mengalami \emph{overheat}, peneliti menggunakan model \emph{YOLOv8}. Pemilihan model ini didasarkan pada kemampuannya dalam deteksi objek yang akurat dan kecepatan proses yang optimal. Proses deteksi komponen \emph{overheat} dilakukan melalui beberapa tahapan sebagai berikut:
+
+\subsection{Pembuatan Dataset}
+Dataset citra termal dari komponen gardu listrik dikumpulkan dan diproses untuk melatih model deteksi. Pengumpulan data dilakukan melalui platform \emph{Roboflow}, di mana setiap citra diberi label secara akurat untuk mengidentifikasi jenis komponen yang terdeteksi.
+
+\subsection{Pelatihan Model \emph{YOLOv8}}
+Model \emph{YOLOv8} dilatih menggunakan dataset yang telah disiapkan. Proses pelatihan mencakup penyesuaian hiperparameter dan penggunaan augmentasi data untuk meningkatkan akurasi model. Evaluasi kinerja model dilakukan dengan menggunakan metrik \emph{mean Average Precision} (mAP) dan \emph{Intersection over Union} (IoU) untuk menilai kemampuan deteksi. Setelah pelatihan, model diuji menggunakan dataset validasi untuk memastikan kinerja yang optimal.
+
+\subsection{Konversi ke \emph{TensorRT}}
+Untuk meningkatkan kecepatan deteksi dan mengurangi beban komputasi, model \emph{YOLOv8} dikonversi ke format \emph{TensorRT} (TRT). Model yang awalnya dalam format \emph{PyTorch} diekspor ke format \emph{Open Neural Network Exchange} (ONNX) menggunakan perintah dari \emph{library Ultralytics}. Setelah model diekspor ke format ONNX, konversi ke format TRT dilakukan dengan perintah \texttt{trtexec} dari NVIDIA untuk mempercepat proses inferensi.
+
+\subsection{Deteksi Suhu Komponen}
+Setelah komponen berhasil terdeteksi oleh \emph{YOLOv8}, tahap selanjutnya adalah menganalisis suhu pada komponen dengan menggunakan segmentasi warna dalam ruang warna \emph{HSV} (\emph{Hue, Saturation, Value}) pada \emph{bounding box} yang terdeteksi. Metode ini digunakan untuk mengidentifikasi area dalam citra termal yang memiliki suhu tinggi, biasanya ditunjukkan dengan warna seperti merah, kuning, atau oranye, sesuai dengan dataset kamera termal yang digunakan.
+
+Deteksi komponen terlebih dahulu sangat penting karena setiap komponen memiliki ambang batas suhu \emph{overheat} yang berbeda. Tanpa mengetahui jenis komponen yang terdeteksi, sulit untuk menentukan apakah suhu tersebut melebihi batas aman atau tidak. Oleh karena itu, identifikasi komponen terlebih dahulu memastikan bahwa segmentasi suhu yang dilakukan pada \emph{bounding box} yang terdeteksi relevan dan akurat. Berdasarkan data ambang batas suhu masing-masing komponen.
