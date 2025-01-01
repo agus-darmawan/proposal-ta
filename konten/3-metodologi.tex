@@ -188,14 +188,7 @@ Implementasi \emph{Localization Node} bertujuan untuk mengidentifikasi posisi ro
 
 Pada algoritma di atas, robot memilih sumber data posisi berdasarkan akurasi GPS. Jika akurasi GPS memenuhi ambang batas yang telah ditentukan, maka posisi robot diambil dari data GPS, sementara orientasi diambil dari sensor IMU. Namun, jika akurasi GPS rendah, robot akan mengandalkan estimasi posisi dan orientasi yang dihasilkan dari \emph{DLIO}, yang menggabungkan data dari LiDAR dan IMU.
 
-Implementasi \emph{Localization Node} diuji pada robot iCar di kampus ITS. Uji coba ini dilakukan dengan mengulang rute yang sama dua kali untuk memverifikasi presisi estimasi posisi. Hasil yang diperoleh menunjukkan bahwa robot dapat mendeteksi posisinya dengan sangat akurat, yang tercermin dari kedua pengulangan yang memberikan hasil yang sangat konsisten dalam hal posisi dan orientasi.
 
-\begin{figure}[H] 
-  \centering
-  \includegraphics[scale=0.22]{gambar/dlio_its.png}
-  \caption{\emph{DLIO} pada jalan kampus ITS}
-  \label{fig:DLIO pada jalan kampus ITS}
-\end{figure}
 
 \section{Implementasi \emph{Control Package}}
 Berikut ini merupakan implementasi dari desain \emph{Control Package} yang telah dijelaskan sebelumnya.
